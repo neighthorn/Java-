@@ -98,6 +98,7 @@
     - 定义：在简单工厂模式的基础上，使用公共接口作为工厂父类，工厂子类负责创建具体类的对象
     - 解决了简单工厂模式的违背开放关闭原则的问题
     - 工厂方法模式的类图如下：
+
     ![avatar](img/FactoryPattern.png)
 
     - 代码如下：
@@ -188,8 +189,10 @@
 - 依赖注入DI(Dependency Injection)：依赖注入可以理解为IoC思想的一种实现方式，组件可以以一些预定义的方式接受来自容器的资源注入。
 - 举个例子来说明IoC和DI：
     - 现在我们有两份代码：myApp.jar和lib.jar，myApp.jar实现了项目的主要逻辑，lib.jar中定义了一个接口Person和该接口的实现类Student和Teacher，如下图：
+
     ![avatar](img/IoC例子/强耦合的例子.jpg)
     - 上图中，myApp.jar中new了一个Student对象出来，也就是说myApp.jar把Student的实例注入到了对象p中。我们可以发现，上图中的依赖注入方式(也就是通过new一个对象来实现依赖注入)是强耦合的，如果有一天我们不再需要Student类了，那么我们还需要在myApp.jar中修改相应的代码，这显然不符合开放关闭原则，如果引入Spring中的IoC机制就可以很好的实现解耦：
+    
     ![avatar](img/IoC例子/通过IoC解耦之后的例子.jpg)
     这样，我们只需要通过修改xml文件中相应的配置就可以在myApp.jar中移除Student对象的注入，实现了解耦。
 - IoC容器：
