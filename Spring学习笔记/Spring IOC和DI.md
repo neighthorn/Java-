@@ -192,7 +192,7 @@
 
     ![avatar](img/IoC例子/强耦合的例子.jpg)
     - 上图中，myApp.jar中new了一个Student对象出来，也就是说myApp.jar把Student的实例注入到了对象p中。我们可以发现，上图中的依赖注入方式(也就是通过new一个对象来实现依赖注入)是强耦合的，如果有一天我们不再需要Student类了，那么我们还需要在myApp.jar中修改相应的代码，这显然不符合开放关闭原则，如果引入Spring中的IoC机制就可以很好的实现解耦：
-    
+
     ![avatar](img/IoC例子/通过IoC解耦之后的例子.jpg)
     这样，我们只需要通过修改xml文件中相应的配置就可以在myApp.jar中移除Student对象的注入，实现了解耦。
 - IoC容器：
@@ -316,10 +316,25 @@
 
                 </beans>
                 ```
+    - bean标签：
+        - 作用：配置托管给spring的对象，默认情况下调用类的无参构造函数，如果没有无参构造函数则不能成功
+        - 属性：
+            - id：指定对象在容器中的标识，将其作为参数传入到getBean()方法中可以获取对应的对象
+            - class：指定类全类名，默认情况下调用无参构造函数
+            - scope：指定对象的作用范围，可选值如下：
+                - singleton：单例对象，默认值
+                - prototype：多例对象
+                - request：将对象存入到web项目的request域中
+                - session：将对象存入到web项目的session域中
+                - global session：将对象存入到web项目集群的session域中，若不存在集群，则global session相当于session
+            - init-method：指定类中的初始化方法名称，在对象创建成功之后执行
+            - destroy-method：指定类中销毁方法名称，对prototype多例对象没有作用，因为多利对象的销毁时机不受容器控制
         
 ---
 
 ## Spring中Bean的生命周期
+
+![Bean的生命周期](img/Bean的生命周期.png)
 
 
 ---
@@ -333,3 +348,5 @@
 - [简单工厂模式（SimpleFactoryPattern）- 最易懂的设计模式解析](https://www.jianshu.com/p/e55fbddc071c)
 - [BeanFactory和ApplicationContext有什么区别？](https://www.jianshu.com/p/fd8e441b98c8)
 - [Spring中BeanFactory和ApplicationContext的区别](https://blog.csdn.net/pseudonym_/article/details/72826059)
+- [Spring Bean的生命周期（非常详细）](https://www.cnblogs.com/zrtqsk/p/3735273.html)
+- [请别再问Spring Bean的生命周期了！](https://www.jianshu.com/p/1dec08d290c1)
