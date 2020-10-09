@@ -792,8 +792,218 @@
 ---
 
 ## 使用注解实现IoC和DI
+- Spring的注解配置可以和xml配置并存（半注解配置），也可以只使用注解配置
+- 半注解配置：
+    - Address类：
+        ```Java
+        package org.AnnotationTest;
 
+        import org.springframework.beans.factory.annotation.Value;
+        import org.springframework.stereotype.Component;
 
+        @Component
+        public class Address {
+            @Value(value = "wuhan")
+            private String city;
+            @Value(value = "luonan")
+            private String street;
+
+            public String getCity() {
+                return city;
+            }
+
+            public void setCity(String city) {
+                this.city = city;
+            }
+
+            public String getStreet() {
+                return street;
+            }
+
+            public void setStreet(String street) {
+                this.street = street;
+            }
+
+            @Override
+            public String toString() {
+                return "Address{" +
+                        "city='" + city + '\'' +
+                        ", street='" + street + '\'' +
+                        '}';
+            }
+        }
+        ```
+    
+    - Family类：
+        ```Java
+        package org.AnnotationTest;
+
+        import org.springframework.beans.factory.annotation.Value;
+        import org.springframework.stereotype.Component;
+
+        @Component
+        public class Family {
+            @Value(value = "dad")
+            private String dad;
+            @Value(value = "mom")
+            private String mom;
+
+            @Override
+            public String toString() {
+                return "Family{" +
+                        "dad='" + dad + '\'' +
+                        ", mom='" + mom + '\'' +
+                        '}';
+            }
+
+            public String getDad() {
+                return dad;
+            }
+
+            public void setDad(String dad) {
+                this.dad = dad;
+            }
+
+            public String getMom() {
+                return mom;
+            }
+
+            public void setMom(String mom) {
+                this.mom = mom;
+            }
+        }
+        ```
+
+    - Person类：
+        ```Java
+        package org.AnnotationTest;
+
+        import org.springframework.beans.factory.annotation.Autowired;
+        import org.springframework.beans.factory.annotation.Value;
+        import org.springframework.stereotype.Component;
+
+        @Component
+        public class Person {
+            @Value(value = "xiaoming")
+            private String name;
+            @Autowired
+            private Address address;
+            @Autowired
+            private Family family;
+
+            public String getName() {
+                return name;
+            }
+
+            public void setName(String name) {
+                this.name = name;
+            }
+
+            public Address getAddress() {
+                return address;
+            }
+
+            public void setAddress(Address address) {
+                this.address = address;
+            }
+
+            public Family getFamily() {
+                return family;
+            }
+
+            public void setFamily(Family family) {
+                this.family = family;
+            }
+
+            @Override
+            public String toString() {
+                return "Person{" +
+                        "name='" + name + '\'' +
+                        ", address=" + address +
+                        ", family=" + family +
+                        '}';
+            }
+        }
+        ```
+
+    - 测试类：
+        ```Java
+        package org.AnnotationTest;
+
+        import org.springframework.context.ApplicationContext;
+        import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+        public class TestAnnotation {
+            public static void main(String[] args) {
+                ApplicationContext context=new ClassPathXmlApplicationContext("annotation.xml");
+                Person person=context.getBean("person", Person.class);
+                System.out.println(person);
+            }
+        }
+        ```
+    
+    - xml文件：
+        ```xml
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <beans xmlns="http://www.springframework.org/schema/beans"
+            xmlns:context="http://www.springframework.org/schema/context"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xsi:schemaLocation="http://www.springframework.org/schema/beans
+                http://www.springframework.org/schema/beans/spring-beans.xsd
+                http://www.springframework.org/schema/context
+                http://www.springframework.org/schema/context/spring-context.xsd">
+
+            <context:component-scan base-package="org.AnnotationTest"></context:component-scan>
+            <context:annotation-config></context:annotation-config>
+
+        </beans>
+        ```
+- 纯注解配置：
+    - 纯注解配置不需要xml文件，但是需要一个配置类来替代xml配置文件：
+        - 配置类：
+            ```Java
+            package org.AnnotationTest;
+
+            import org.springframework.context.annotation.Bean;
+            import org.springframework.context.annotation.Configuration;
+
+            @Configuration
+            public class MyConfiguration {
+
+                @Bean
+                public Person person(){
+                    return new Person();
+                }
+
+                @Bean
+                public Address address(){
+                    return new Address();
+                }
+
+                @Bean
+                public Family family(){
+                    return new Family();
+                }
+            }
+            ```
+
+        - 测试类也需要改动：
+            ```Java
+            package org.AnnotationTest;
+
+            import org.example.App;
+            import org.springframework.context.ApplicationContext;
+            import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+            import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+            public class TestAnnotation {
+                public static void main(String[] args) {
+                    ApplicationContext context=new AnnotationConfigApplicationContext(MyConfiguration.class);
+                    Person person=context.getBean("person", Person.class);
+                    System.out.println(person);
+                }
+            }
+            ```
 ---
 
 ## 参考文章
