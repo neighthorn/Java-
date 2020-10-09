@@ -557,6 +557,242 @@
         ------------------destroy------------------
         ```
 
+---
+
+## 依赖注入
+- Spring通过反射实现依赖注入，上文中我们在xml文件中使用的`<bean id="person" class="org.BeanTest.Person"></bean>`就是使用反射的方法来注入依赖
+- 使用构造函数注入
+    - 通过使用`<constructor-arg>`标签来定义构造函数的参数，相当于调用类的构造方法。
+    - 属性：
+        - 寻找要赋值给的字段：
+            - index：指定参数在构造函数参数列表中的位置
+            - type：指定参数在构造函数中的数据类型
+            - name：指定参数在构造函数中的变量名
+        - 指定赋给字段的值：
+            - value：给基本数据类型和String类行赋值
+            - ref：给其他Bean类型的字段赋值，ref属性的值应该为配置文件中配置的Bean的id
+- 使用set方法注入
+    - 通过使用`<property>`标签，并且在类中提供对应需要注入成员属性的set方法，创建对象只需要调用赋值属性的set方法
+    - 属性：
+        - name：要调用set方法赋值的成员字段
+        - value：同`<constructor-arg>`
+        - ref：同`<constructor-arg`
+- 注入集合字段：
+    - 使用set方法注入集合字段：
+        ```xml
+        <bean id="address" class="com.demo.pojo.Address"  >
+            <property name="city" value="武汉" />
+        </bean>
+        <bean id="student" class="com.demo.pojo.Student">
+            //字符串及基本数据类型
+            <property name="name" value="张三" />
+            
+            //bean类型注入
+            <property name="address" ref="address" />
+            
+            //数组类型注入
+            <property name="books">
+                <array>
+                    <value>红楼梦</value>
+                    <value>水浒传</value>
+                    <value>西游记</value>
+                    <value>三国演义</value>
+                </array>
+            </property>
+            
+            //list类型注入
+            <property name="hobbies">
+                <list>
+                    <value>写代码</value>
+                    <value>看电影</value>
+                    <value>看日漫</value>
+                </list>
+            </property>
+
+            //set类型
+            <property name="games">
+                <set>
+                    <value>LOL</value>
+                    <value>CS</value>
+                    <value>OW</value>
+                </set>
+            </property>
+            //map类型  其value值只能在 括号内加
+            <property name="card">
+                <map>
+                    <entry key="idCard" value="123223423423423" />
+                    <entry key="studentCard" value="986675787" />
+                </map>
+            </property>
+            
+            //properties类型  其value值只能在标签内容处加
+            <property name="info">
+                <props>
+                    <prop key="student"> hello </prop>
+                </props>
+            </property>
+            
+            //空指针注入
+            <property name="wife">
+                <null/>
+            </property>
+        </bean>
+            //空指针和空字符串不同 空字符串是""  空指针是null
+        ```
+- 使用autowire自动装配Bean属性
+    - 使用set方法赋值，代码如下：
+        - Address类：
+            ```Java
+            package org.AutowireTest;
+
+            public class Address {
+                private String city;
+                private String street;
+
+                public String getCity() {
+                    return city;
+                }
+
+                public void setCity(String city) {
+                    this.city = city;
+                }
+
+                public String getStreet() {
+                    return street;
+                }
+
+                public void setStreet(String street) {
+                    this.street = street;
+                }
+
+                @Override
+                public String toString() {
+                    return "Address{" +
+                            "city='" + city + '\'' +
+                            ", street='" + street + '\'' +
+                            '}';
+                }
+            }
+            ```
+        
+        - Family类：
+            ```Java
+            package org.AutowireTest;
+
+            public class Family {
+                private String dad;
+                private String mom;
+
+                @Override
+                public String toString() {
+                    return "Family{" +
+                            "dad='" + dad + '\'' +
+                            ", mom='" + mom + '\'' +
+                            '}';
+                }
+
+                public String getDad() {
+                    return dad;
+                }
+
+                public void setDad(String dad) {
+                    this.dad = dad;
+                }
+
+                public String getMom() {
+                    return mom;
+                }
+
+                public void setMom(String mom) {
+                    this.mom = mom;
+                }
+            }
+            ```
+        
+        - Person类：
+            ```Java
+            package org.AutowireTest;
+
+            public class Person {
+                private String name;
+                private Address address;
+                private Family family;
+
+                public String getName() {
+                    return name;
+                }
+
+                public void setName(String name) {
+                    this.name = name;
+                }
+
+                public Address getAddress() {
+                    return address;
+                }
+
+                public void setAddress(Address address) {
+                    this.address = address;
+                }
+
+                public Family getFamily() {
+                    return family;
+                }
+
+                public void setFamily(Family family) {
+                    this.family = family;
+                }
+
+                @Override
+                public String toString() {
+                    return "Person{" +
+                            "name='" + name + '\'' +
+                            ", address=" + address +
+                            ", family=" + family +
+                            '}';
+                }
+            }
+            ```
+
+        - 测试类：
+            ```Java
+            package org.AutowireTest;
+
+            import org.springframework.context.ApplicationContext;
+            import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+            public class TestAutowire {
+                public static void main(String[] args) {
+                    ApplicationContext context=new ClassPathXmlApplicationContext("autowire.xml");
+                    Person person=context.getBean("person", Person.class);
+                    System.out.println(person);
+                }
+            }
+            ```
+        
+        - xml文件:
+            ```xml
+            <?xml version="1.0" encoding="UTF-8"?>
+            <beans xmlns="http://www.springframework.org/schema/beans"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xmlns:p="http://www.springframework.org/schema/p"
+                xmlns:aop="http://www.springframework.org/schema/aop"
+                xsi:schemaLocation="http://www.springframework.org/schema/beans
+                    http://www.springframework.org/schema/beans/spring-beans.xsd
+                    http://www.springframework.org/schema/aop
+                    http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+                <bean id="address" class="org.AutowireTest.Address" p:city="wuhan" p:street="luonan"></bean>
+
+                <bean id="family" class="org.AutowireTest.Family" p:dad="dad" p:mom="mom"></bean>
+
+                <bean id="person" class="org.AutowireTest.Person" p:name="xiaoming" autowire="byName"></bean>
+
+            </beans>
+            ```
+---
+
+## 使用注解实现IoC和DI
+
 
 ---
 
@@ -571,3 +807,4 @@
 - [Spring中BeanFactory和ApplicationContext的区别](https://blog.csdn.net/pseudonym_/article/details/72826059)
 - [Spring Bean的生命周期（非常详细）](https://www.cnblogs.com/zrtqsk/p/3735273.html)
 - [请别再问Spring Bean的生命周期了！](https://www.jianshu.com/p/1dec08d290c1)
+- [深究Spring中Bean的生命周期](https://www.cnblogs.com/javazhiyin/p/10905294.html)
