@@ -168,7 +168,7 @@
         Class<?> getObjectType();
 
         boolean isSingleton();
-    }
+        }
         ```
     - AbstractFactoryBean是一个抽象类（也可认为AbstractFactoryBean是Spring底层的抽象工厂类），其实现了FactoryBean接口，这个抽象类中的getObject方法返回了Bean实例
         ```Java
