@@ -335,6 +335,227 @@
 ## Spring中Bean的生命周期
 
 ![Bean的生命周期](img/Bean的生命周期.png)
+- 上图有一些错误，而且BeanFactoryProcessor属于BeanFactory的生命周期，并非Bean的生命周期，完整的Bean的生命周期可以在[官方文档](https://docs.spring.io/spring-framework/docs/current/javadoc-api/org/springframework/beans/factory/BeanFactory.html)看到，下面是图片示例：
+    ![正确完整的Bean的生命周期](img/正确完整的Bean的生命周期.jpg)
+- 测试代码如下，根据getBean调用的位置，我们也可以看到ApplicationContext会在容器生成的时候就注入对象：
+    - Person类：
+        ```Java
+        package org.BeanTest;
+
+        import org.springframework.beans.BeansException;
+        import org.springframework.beans.factory.*;
+        import org.springframework.context.*;
+        import org.springframework.core.env.Environment;
+        import org.springframework.core.io.ResourceLoader;
+        import org.springframework.util.StringValueResolver;
+
+        import javax.annotation.PostConstruct;
+        import javax.annotation.PreDestroy;
+
+        public class Person implements BeanFactoryAware, BeanNameAware,
+                BeanClassLoaderAware, EnvironmentAware, EmbeddedValueResolverAware,
+                ResourceLoaderAware, ApplicationEventPublisherAware, MessageSourceAware,
+                ApplicationContextAware, InitializingBean, DisposableBean {
+            private String name;
+            private String address;
+            private int phone;
+
+            private BeanFactory beanFactory;
+            private String beanName;
+
+            public Person(){
+                System.out.println("【构造器】调用Person的构造器实例化");
+            }
+
+            public String getName() {
+                return name;
+            }
+
+            public void setName(String name) {
+                System.out.println("【注入属性】：注入属性name");
+                this.name = name;
+            }
+
+            public String getAddress() {
+                return address;
+            }
+
+            public void setAddress(String address) {
+                System.out.println("【注入属性】：注入属性address");
+                this.address = address;
+            }
+
+            public int getPhone() {
+                return phone;
+            }
+
+            public void setPhone(int phone) {
+                System.out.println("【注入属性】：注入属性phone");
+                this.phone = phone;
+            }
+
+            @Override
+            public String toString() {
+                return "Person{" +
+                        "name='" + name + '\'' +
+                        ", address='" + address + '\'' +
+                        ", phone=" + phone +
+                        '}';
+            }
+
+            @Override
+            public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+                System.out.println("【BeanFactoryAware接口】调用BeanFactoryAware.setBeanFactory()");
+                this.beanFactory=beanFactory;
+            }
+
+            @Override
+            public void setBeanName(String s) {
+                System.out.println("【BeanNameAware接口】调用BeanNameAware.setBeanName()");
+                this.beanName=s;
+            }
+
+            @Override
+            public void destroy() throws Exception {
+                System.out.println("【DisposableBean接口】调用DisposableBean.destroy()");
+            }
+
+            @Override
+            public void afterPropertiesSet() throws Exception {
+                System.out.println("【InitializingBean接口】调用InitializingBean.afterPropertiesSet()");
+            }
+
+            @Override
+            public void setBeanClassLoader(ClassLoader classLoader) {
+                System.out.println("【BeanClassLoaderAware接口】调用BeanClassLoaderAware.setBeanClassLoader()");
+            }
+
+            @Override
+            public void setEnvironment(Environment environment) {
+                System.out.println("【EnvironmentAware接口】调用EnvironmentAware.setEnvironment()");
+            }
+
+            @Override
+            public void setEmbeddedValueResolver(StringValueResolver stringValueResolver) {
+                System.out.println("【EmbeddedValueResolverAware接口】调用EmbeddedValueResolver.setEmbeddedValueResolver()");
+            }
+
+            @Override
+            public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+                System.out.println("【ApplicationContextAware接口】调用ApplicationContextAware.setApplicationContext()");
+            }
+
+            @Override
+            public void setApplicationEventPublisher(ApplicationEventPublisher applicationEventPublisher) {
+                System.out.println("【ApplicationEventPublisherAware接口】调用ApplicationEventPublisherAware.setApplicationEventPublisher()");
+            }
+
+            @Override
+            public void setMessageSource(MessageSource messageSource) {
+                System.out.println("【MessageSourceAware接口】调用MessageSourceAware.setMessageSource()");
+            }
+
+            @Override
+            public void setResourceLoader(ResourceLoader resourceLoader) {
+                System.out.println("【ResourceLoaderAware接口】调用ResourceLoaderAware.setResourceLoader()");
+            }
+
+            public void myPostConstruct(){
+                System.out.println("调用Person.myPostConstruct()");
+            }
+
+            public void myPreDestroy(){
+                System.out.println("调用Person.myPreDestroy()");
+                System.out.println("------------------destroy------------------");
+            }
+        }
+
+        ```
+
+        MyBeanPostProcessor类：
+        ```Java
+        package org.BeanTest;
+
+        import org.springframework.beans.BeansException;
+        import org.springframework.beans.factory.config.BeanPostProcessor;
+
+        public class MyBeanPostProcessor implements BeanPostProcessor {
+            @Override
+            public Object postProcessBeforeInitialization(Object o, String s) throws BeansException {
+                System.out.println("【BeanPostProcessor接口】调用BeanPostProcessor.postProcessBeforeInitialization()");
+                return o;
+            }
+
+            @Override
+            public Object postProcessAfterInitialization(Object o, String s) throws BeansException {
+                System.out.println("【BeanPostProcessor接口】调用BeanPostProcessor.postProcessAfterInitialization()");
+                return o;
+            }
+        }
+
+        ```
+
+        BeanLifeCycleTest类：
+        ```Java
+        package org.BeanTest;
+
+        import org.springframework.context.ApplicationContext;
+        import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+        public class BeanLifeCycleTest {
+            public static void main(String[] args) {
+                ApplicationContext context=new ClassPathXmlApplicationContext("BeanLifeCycle.xml");
+                System.out.println("调用getBean()");
+                Person person=context.getBean("person", Person.class);
+                System.out.println("Person.name= "+person.getName());
+                ((ClassPathXmlApplicationContext)context).destroy();
+            }
+        }
+
+        ```
+
+        xml配置文件：
+        ```xml
+        <?xml version="1.0" encoding="UTF-8"?>
+        <beans xmlns="http://www.springframework.org/schema/beans"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+            xmlns:aop="http://www.springframework.org/schema/aop"
+            xsi:schemaLocation="http://www.springframework.org/schema/beans
+                http://www.springframework.org/schema/beans/spring-beans.xsd
+                http://www.springframework.org/schema/aop
+                http://www.springframework.org/schema/aop/spring-aop.xsd">
+            <bean id="person" class="org.BeanTest.Person"
+                init-method="myPostConstruct" destroy-method="myPreDestroy">
+                <property name="name" value="pp"></property>
+                <property name="address" value="xx.xx"></property>
+                <property name="phone" value="12345678"></property>
+            </bean>
+        </beans>
+        ```
+
+        运行结果：
+        ```
+        【构造器】调用Person的构造器实例化
+        【注入属性】：注入属性name
+        【注入属性】：注入属性address
+        【注入属性】：注入属性phone
+        【BeanNameAware接口】调用BeanNameAware.setBeanName()
+        【BeanClassLoaderAware接口】调用BeanClassLoaderAware.setBeanClassLoader()
+        【BeanFactoryAware接口】调用BeanFactoryAware.setBeanFactory()
+        【EnvironmentAware接口】调用EnvironmentAware.setEnvironment()
+        【EmbeddedValueResolverAware接口】调用EmbeddedValueResolver.setEmbeddedValueResolver()
+        【ResourceLoaderAware接口】调用ResourceLoaderAware.setResourceLoader()
+        【ApplicationEventPublisherAware接口】调用ApplicationEventPublisherAware.setApplicationEventPublisher()
+        【MessageSourceAware接口】调用MessageSourceAware.setMessageSource()
+        【ApplicationContextAware接口】调用ApplicationContextAware.setApplicationContext()
+        【InitializingBean接口】调用InitializingBean.afterPropertiesSet()
+        调用Person.myPostConstruct()
+        调用getBean()
+        Person.name= pp
+        【DisposableBean接口】调用DisposableBean.destroy()
+        调用Person.myPreDestroy()
+        ------------------destroy------------------
+        ```
 
 
 ---
