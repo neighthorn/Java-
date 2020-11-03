@@ -402,3 +402,260 @@
             ```
         - 我们可以看到`$Proxy0`实际上是继承了`Proxy`类，而Java中并不支持多继承，所以只能通过实现接口的方式来代理目标对象，这也就是为什么JDK动态代理的对象必须是一个实现了接口的对象。
 - CGLIB动态代理
+    - CGLIB的动态代理主要通过对目标对象类生成一个子类，重写其中的非静态业务方法来实现代理，代理对象通过`Enhancer`来实现
+    - CGLIB中代理类创建流程
+        - 查找目标类中所有的非静态方法
+        - 把这些方法的定义转换成字节码
+        - 将获取的字节码转换成负责代理对应方法的代理类的Class对象，然后通过反射获得代理类的实例对象
+        - 实现MethodInterceptor接口，处理代理类上的所有方法的请求
+    - 实例代码：
+        - 目标对象：
+            ```Java
+            package com.example.CGLIBProxy;
+
+            public class TargetClass {
+                final public void finalMethod(){
+                    System.out.println("This is a final method");
+                }
+
+                public void sampleMethod(){
+                    System.out.println("This is sampleMethod()");
+                }
+            }
+
+            ```
+        - MethodInterceptor的实现类：
+            ```Java
+            package com.example.CGLIBProxy;
+
+            import net.sf.cglib.proxy.MethodInterceptor;
+            import net.sf.cglib.proxy.MethodProxy;
+
+            import java.lang.reflect.Method;
+
+            public class MyMethodInterceptor implements MethodInterceptor {
+
+                /**
+                * 重写intercept方法，在此方法中调用invokeSuper()函数调用目标对象的方法
+                * @param o 目标对象
+                * @param method 目标对象中的方法
+                * @param objects 方法参数
+                * @param methodProxy 目标对象中方法的MethodProxy对象
+                * 可以在.class文件中看到method和methodProxy是对应的，每个被代理的方法都分别对应一个Method对象一个MethodProxy对象
+                * @return
+                * @throws Throwable
+                */
+                @Override
+                public Object intercept(Object o, Method method, Object[] objects, MethodProxy methodProxy) throws Throwable {
+                    System.out.println("Before invokeSuper()");
+                    Object object=methodProxy.invokeSuper(o,objects);
+                    System.out.println("After invokeSuper()");
+                    return object;
+                }
+            }
+
+            ```
+        - 测试类：
+            ```Java
+            package com.example.CGLIBProxy;
+
+            import net.sf.cglib.core.DebuggingClassWriter;
+            import net.sf.cglib.proxy.Enhancer;
+
+            public class CGLIBProxyTest {
+                public static void main(String[] args) {
+                    //生成.class文件
+                    System.setProperty(DebuggingClassWriter.DEBUG_LOCATION_PROPERTY, "C:\\Users\\Azura\\IdeaProjects\\MVCDemo\\com");
+
+                    //Enhance对象相当于JDK动态代理中的Proxy对象
+                    Enhancer enhancer=new Enhancer();
+                    //设置目标类的字节码文件
+                    enhancer.setSuperclass(TargetClass.class);
+                    //设置回调函数
+                    enhancer.setCallback(new MyMethodInterceptor());
+
+                    TargetClass targetClass=(TargetClass)enhancer.create();
+                    targetClass.finalMethod();
+                    targetClass.sampleMethod();
+                }
+            }
+
+            ```
+        - 运行结果
+            ```
+            CGLIB debugging enabled, writing to 'C:\Users\Azura\IdeaProjects\MVCDemo\com'
+            This is a final method
+            Before invokeSuper()
+            This is sampleMethod()
+            After invokeSuper()
+            ```
+    - 可以在生成的class文件中看到，每个被代理的方法都对应两种方法，我们可以看到代理方法中调用了父类的方法：
+        ```Java
+        final void CGLIB$sampleMethod$0() {
+            super.sampleMethod();
+        }
+
+        public final void sampleMethod() {
+            MethodInterceptor var10000 = this.CGLIB$CALLBACK_0;
+            if (var10000 == null) {
+                CGLIB$BIND_CALLBACKS(this);
+                var10000 = this.CGLIB$CALLBACK_0;
+            }
+
+            if (var10000 != null) {
+                var10000.intercept(this, CGLIB$sampleMethod$0$Method, CGLIB$emptyArgs, CGLIB$sampleMethod$0$Proxy);
+            } else {
+                super.sampleMethod();
+            }
+        }
+        ```
+- Spring AOP
+    - 原理：Spring中AOP通过动态代理实现，使用了JDK动态代理和CGLIB动态代理混合的方式，其中JDK动态代理是Spring的首选方式，当目标对象实现一个接口的时候，Spring就会通过JDK动态代理实现代理，当目标对象没有实现接口，就需要用CGLIB来实现代理
+    - AOP代码实现：
+        - 通知类(声明切面)：
+            ```Java
+            package com.example.Aspect;
+
+            import org.aspectj.lang.JoinPoint;
+            import org.aspectj.lang.ProceedingJoinPoint;
+            import org.aspectj.lang.annotation.*;
+
+            @Aspect
+            public class Logging {
+                @Pointcut("execution(public String com.example.Aspect.AspectTest.aspectCall())")
+                public void pointcut() {
+                }
+
+                //loggingAdvice1()和loggingAdvice2()的对比用来说明定义一个假函数pointcut()可以减少重复写execution()这句代码
+                @Before("pointcut()")
+                public void loggingAdvice1(){
+                    System.out.println("Before advice is executed.--1");
+                }
+
+                @Before("execution(public String com.example.Aspect.AspectTest.aspectCall())")
+                public void loggingAdvice2(JoinPoint joinPoint){
+                    System.out.println("Before advice is executed.--2");
+                    System.out.println(joinPoint.toString());
+                }
+
+                @AfterReturning(pointcut="pointcut()", returning = "returnVal")
+                public void afterReturning(Object returnVal){
+                    System.out.println("afterReturning"+returnVal.toString());
+                }
+
+                @Around("pointcut()")
+                public Object around(ProceedingJoinPoint joinPoint) throws Throwable{
+                    System.out.println("Before around");
+                    Object object=null;
+                    try{
+                        Object[] args=joinPoint.getArgs();
+                        System.out.println("In around: Before advice is executed");
+                        object=joinPoint.proceed();
+                        System.out.println("In around: AfterReturning advice is run");
+                        return object;
+                    }catch (Throwable throwable){
+                        System.out.println("Exception thrown in method");
+                        throw new RuntimeException(throwable);
+                    }
+                    finally {
+                        System.out.println("In around: Running After Advice");
+                        System.out.println("After around");
+                    }
+                }
+
+                @AfterThrowing(value = "pointcut()", throwing = "throwable")
+                public void afterThrowable(Throwable throwable){
+                    System.out.println("Exception: "+throwable.getMessage());
+                }
+
+                @After("pointcut()")
+                public void after(){
+                    System.out.println("After advice is executed.");
+                }
+            }
+
+            ```
+        - 测试类：
+            ```Java
+            package com.example.Aspect;
+
+            import org.apache.catalina.core.ApplicationContext;
+            import org.springframework.context.support.ClassPathXmlApplicationContext;
+
+            import java.util.Scanner;
+
+            public class AspectTest {
+                public String aspectCall(){
+                    System.out.println("Applying advices for the first time");
+                    return "aspectCall";
+                }
+
+                public void myMethod(){
+                    System.out.println("This is an extra Method");
+                }
+
+                public static void main(String[] args) {
+                    Scanner scanner=new Scanner(System.in);
+                    System.out.println("My first aspect");
+
+                    ClassPathXmlApplicationContext context=new ClassPathXmlApplicationContext("aspectConfig.xml");
+                    AspectTest call=(AspectTest)context.getBean("aspect");
+
+                    System.out.println("enter an integer");
+                    int a=scanner.nextInt();
+                    if(a==1){
+                        throw new RuntimeException();
+                    }
+                    else{
+                        call.aspectCall();
+                    }
+                    call.myMethod();
+                }
+            }
+
+            ```
+        - XML配置文件：
+            ```XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <beans xmlns="http://www.springframework.org/schema/beans"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xmlns:aop="http://www.springframework.org/schema/aop"
+                xsi:schemaLocation="http://www.springframework.org/schema/beans
+                http://www.springframework.org/schema/beans/spring-beans.xsd
+                http://www.springframework.org/schema/aop
+                http://www.springframework.org/schema/aop/spring-aop.xsd">
+
+                <aop:aspectj-autoproxy></aop:aspectj-autoproxy>
+                <bean id="aspect" class="com.example.Aspect.AspectTest"></bean>
+                <bean id="logger" class="com.example.Aspect.Logging"></bean>
+            </beans>
+            ```
+        - 运行结果：
+            ```
+            My first aspect
+            22:12:01.675 [main] DEBUG org.springframework.context.support.ClassPathXmlApplicationContext - Refreshing org.springframework.context.support.ClassPathXmlApplicationContext@2a33fae0
+            22:12:01.927 [main] DEBUG org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loaded 3 bean definitions from class path resource [aspectConfig.xml]
+            22:12:01.955 [main] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory - Creating shared instance of singleton bean 'org.springframework.aop.config.internalAutoProxyCreator'
+            22:12:02.045 [main] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory - Creating shared instance of singleton bean 'aspect'
+            22:12:02.100 [main] DEBUG org.springframework.aop.aspectj.annotation.ReflectiveAspectJAdvisorFactory - Found AspectJ method: public java.lang.Object com.example.Aspect.Logging.around(org.aspectj.lang.ProceedingJoinPoint) throws java.lang.Throwable
+            22:12:02.100 [main] DEBUG org.springframework.aop.aspectj.annotation.ReflectiveAspectJAdvisorFactory - Found AspectJ method: public void com.example.Aspect.Logging.loggingAdvice1()
+            22:12:02.100 [main] DEBUG org.springframework.aop.aspectj.annotation.ReflectiveAspectJAdvisorFactory - Found AspectJ method: public void com.example.Aspect.Logging.loggingAdvice2(org.aspectj.lang.JoinPoint)
+            22:12:02.100 [main] DEBUG org.springframework.aop.aspectj.annotation.ReflectiveAspectJAdvisorFactory - Found AspectJ method: public void com.example.Aspect.Logging.after()
+            22:12:02.100 [main] DEBUG org.springframework.aop.aspectj.annotation.ReflectiveAspectJAdvisorFactory - Found AspectJ method: public void com.example.Aspect.Logging.afterReturning(java.lang.Object)
+            22:12:02.110 [main] DEBUG org.springframework.aop.aspectj.annotation.ReflectiveAspectJAdvisorFactory - Found AspectJ method: public void com.example.Aspect.Logging.afterThrowable(java.lang.Throwable)
+            22:12:02.315 [main] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory - Creating shared instance of singleton bean 'logger'
+            enter an integer
+            2
+            Before around
+            In around: Before advice is executed
+            Before advice is executed.--1
+            Before advice is executed.--2
+            execution(String com.example.Aspect.AspectTest.aspectCall())
+            Applying advices for the first time
+            afterReturningaspectCall
+            After advice is executed.
+            In around: AfterReturning advice is run
+            In around: Running After Advice
+            After around
+            This is an extra Method
+            ```
