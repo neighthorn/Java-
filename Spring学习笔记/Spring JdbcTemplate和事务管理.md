@@ -448,21 +448,33 @@
             ```XML
             <?xml version="1.0" encoding="UTF-8"?>
             <beans xmlns="http://www.springframework.org/schema/beans"
-                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/context"
-                xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+                xmlns:context="http://www.springframework.org/schema/context"
+                xmlns:aop="http://www.springframework.org/schema/aop"
+                xmlns:tx="http://www.springframework.org/schema/tx"
+                xsi:schemaLocation="http://www.springframework.org/schema/beans
+                http://www.springframework.org/schema/beans/spring-beans.xsd
+                http://www.springframework.org/schema/context
+                https://www.springframework.org/schema/context/spring-context.xsd
+                http://www.springframework.org/schema/aop
+                http://www.springframework.org/schema/aop/spring-aop.xsd
+                http://www.springframework.org/schema/tx
+                http://www.springframework.org/schema/tx/spring-tx.xsd">
 
-                <!-- Spring内置数据源DriverManagerDataSource -->
-                <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
-                    <property name="driverClassName" value="com.mysql.cj.jdbc.Driver"></property>
-                    <property name="url" value="jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&amp;characterEncoding=UTF-8&amp;serverTimezone=UTC"></property>
-                    <property name="username" value="root"></property>
-                    <property name="password" value="20010106"></property>
-                </bean>
+            <!-- Spring内置数据源DriverManagerDataSource -->
+            <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+                <property name="driverClassName" value="com.mysql.cj.jdbc.Driver"></property>
+                <property name="url" value="jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&amp;characterEncoding=UTF-8&amp;serverTimezone=UTC"></property>
+                <property name="username" value="root"></property>
+                <property name="password" value="20010106"></property>
+            </bean>
 
-                <!-- 向Spring容器中注入一个事务管理器 -->
-                <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
-                    <property name="dataSource" ref="dataSource"></property>
-                </bean>
+            <!-- 向Spring容器中注入一个事务管理器 -->
+            <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+                <property name="dataSource" ref="dataSource"></property>
+            </bean>
+
+            <tx:annotation-driven transaction-manager="transactionManager"></tx:annotation-driven>
             </beans>
             ```
     - `TransactionDefinition`是Spring中事务支持的核心接口
