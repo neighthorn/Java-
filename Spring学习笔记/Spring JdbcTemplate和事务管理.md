@@ -390,3 +390,161 @@
         ```
 
 ## 事务管理
+- 事务指的是访问并可能更新数据库中各项数据项的一个程序执行单元。
+    - 事务四大特性：
+        - 原子性：事务包含的操作要么全部成功，要么全部失败回滚
+        - 一致性：事务执行前和执行后要处于一致性状态
+        - 隔离性：多个并发的事务之间要相互隔离
+        - 持久性：事务一旦提交，对数据库的改变是永久的
+    - 事务的安全隐患：
+        - 脏读：一个事务读取到另一个事务还没有提交的(可能需要回滚)的脏数据
+        - 不可重复读：一个事务执行期间另一个事务提交了修改，导致前一个事务前后两次相同的查询得到的结果不相同
+        - 幻读：一个事务执行期间另一个事务提交添加数据，导致前一个事务前后两次相同的查询得到的结果数据条数不同，举个栗子：
+            - T1事务：
+                ```SQL
+                select * from users where id = 1
+                insert into users('id', 'name') values(1, 'xiaohong')
+                ```
+            - T2事务：
+                ```SQL
+                insert into users('id', 'name') values(1, 'xiaoming')
+                ```
+            - 如果T1和T2同时执行，那么我们可能会发现，T1事务会失败，但是select的结果是空
+    - 许多程序要依赖数据库事务才能正确执行，比如以下两句SQL语句实现了A支付给B100元：
+        
+        ```SQL
+        UPDATE accounts SET balance = balance - 100 WHERE id = 'A' AND balance >= 100;
+        UPDATE accounts SET balance = balance + 100 WHERE id = 'B';
+        ```
+
+        上述两句SQL语句必须要以一个事务的方式来执行，才能保证要么全部成功要么全部失败，如果只有其中一个成功那么账户总额度就发生了改变
+- Spring支持两种类型的事务管理：
+    - 编程式事务管理：使用代码管理事务，很难维护
+    - 声明式事务管理：仅仅使用注解和XML配置来管理事务，把事务管理从业务逻辑中分离出来。Spring中声明式事务管理是基于AOP的。
+- Spring_事务管理接口
+    - `org.springframework.transaction.PlatformTransactionManager`是Spring事务管理器的接口
+        - 接口源码
+        ```Java
+        public interface PlatformTransactionManager extends TransactionManager {
+            // 获得事务的状态信息
+            TransactionStatus getTransaction(@Nullable TransactionDefinition var1) throws TransactionException;
+            // 提交事务
+            void commit(TransactionStatus var1) throws TransactionException;
+            // 回滚事务
+            void rollback(TransactionStatus var1) throws TransactionException;
+        }
+        ```
+        - 不同的数据访问技术的事务使用不同的接口实现：
+
+            | 数据访问技术 | 实现 |
+            | --- | --- |
+            | JDBC | DataSourceTransactionManager |
+            | JPA | JapTransactionManager |
+            | Hibernate | HibernateTransactionManager |
+            | JDO | JdoTransactionManager |
+            | 分布式事务 | JtaTransactionManager |
+    
+        - 可以通过xml文件向Spring容器中注入一个事务管理器，然后再把对应的数据源注入到事务管理器中：
+            ```XML
+            <?xml version="1.0" encoding="UTF-8"?>
+            <beans xmlns="http://www.springframework.org/schema/beans"
+                xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:tx="http://www.springframework.org/schema/context"
+                xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd">
+
+                <!-- Spring内置数据源DriverManagerDataSource -->
+                <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
+                    <property name="driverClassName" value="com.mysql.cj.jdbc.Driver"></property>
+                    <property name="url" value="jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&amp;characterEncoding=UTF-8&amp;serverTimezone=UTC"></property>
+                    <property name="username" value="root"></property>
+                    <property name="password" value="20010106"></property>
+                </bean>
+
+                <!-- 向Spring容器中注入一个事务管理器 -->
+                <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+                    <property name="dataSource" ref="dataSource"></property>
+                </bean>
+            </beans>
+            ```
+    - `TransactionDefinition`是Spring中事务支持的核心接口
+        - 源码：
+            ```Java
+            public interface TransactionDefinition {
+                int PROPAGATION_REQUIRED = 0;
+                int PROPAGATION_SUPPORTS = 1;
+                int PROPAGATION_MANDATORY = 2;
+                int PROPAGATION_REQUIRES_NEW = 3;
+                int PROPAGATION_NOT_SUPPORTED = 4;
+                int PROPAGATION_NEVER = 5;
+                int PROPAGATION_NESTED = 6;
+                int ISOLATION_DEFAULT = -1;
+                int ISOLATION_READ_UNCOMMITTED = 1;
+                int ISOLATION_READ_COMMITTED = 2;
+                int ISOLATION_REPEATABLE_READ = 4;
+                int ISOLATION_SERIALIZABLE = 8;
+                int TIMEOUT_DEFAULT = -1;
+
+                default int getPropagationBehavior() {
+                    return 0;
+                }
+
+                default int getIsolationLevel() {
+                    return -1;
+                }
+
+                default int getTimeout() {
+                    return -1;
+                }
+
+                default boolean isReadOnly() {
+                    return false;
+                }
+
+                @Nullable
+                default String getName() {
+                    return null;
+                }
+
+                static TransactionDefinition withDefaults() {
+                    return StaticTransactionDefinition.INSTANCE;
+                }
+            }
+            ```
+        - 我们可以看到，`TransactionDefiniton`中定义了隔离级别的可能值和传播类型的可能值：
+            - 隔离级别：
+                - `ISOLATION_DEFAULT`：默认的隔离级别，使用数据库默认的事务隔离级别
+                - `ISOLATION_READ_UNCOMMITTED`：读未提交，事务中的修改即使没有提交也可以被其他事务看到，所以会导致脏读、不可重复读、幻读
+                - `ISOLATION_READ_COMMITTED`：读已提交(Oracle数据库的默认隔离级别)，一个事务在执行过程中不会读取到其他事务未提交的数据，但是会导致不可重复读和幻读
+                - `ISOLATION_REPEATABLE_READ`：可重复读(Mysql数据库默认的隔离级别)，一个事务在执行过程中不会看到其他事务提交的修改了的数据，只有该事务结束之后才能看到其他事务提交的修改，避免了脏读、不可重复读，但是会导致幻读
+                - `ISOLATION_SERIALIZABLE`：串行化，事务串行执行，一个时刻只能有一个事务在执行，避免了脏读、不可重复读、幻读
+            - 传播类型：
+                - `PROPAGATION_REQUIRED`：Spring默认的传播行为。若当前没有事务，就新建一个事务；若当前已经存在一个事务中，加入到这个事务中。增删改查操作均可用
+                - `PROPAGATION_SUPPORTS`：若当前没有事务，则以非事务方式执行，若当前存在事务，加入到这个事务中。查询操作可用
+                - `PROPAGATION_MANDATORY`：如果当前存在事务，则加入到当前事务中，否则抛出异常
+                - `PROPAGATION_REQUIRES_NEW`：如果当前不存在事务，则新建一个事务，如果当前已经存在事务，则挂起当前事务
+                - `PROPAGATION_NOT_SUPPORTED`：如果当前不存在事务，则按照非事务方式执行，如果当前存在事务，则挂起当前事务
+                - `PROPAGATION_NEVER`：如果当前不存在事务，则以非事务方式运行，否则抛出异常
+                - `PROPAGATION_NESTED`：如果当前存在事务则嵌套在事务中执行，否则新建事务
+        - 其余的方法获取事务的相关信息
+    - `TransactionExecution`和`TransactionStatus`定义了控制事务执行和查询事务状态的相关方法：
+        - `TransactionStatus`：
+            ```Java
+            public interface TransactionStatus extends TransactionExecution, SavepointManager, Flushable {
+                boolean hasSavepoint();
+
+                void flush();
+            }
+            ```
+        - `TransactionExecution`：
+            ```Java
+            public interface TransactionExecution {
+                boolean isNewTransaction();
+
+                void setRollbackOnly();
+
+                boolean isRollbackOnly();
+
+                boolean isCompleted();
+            }
+            ```
+- 事务的传播行为：
+    - 我们在`TransactionDefinition`的源码中看到不同传播行为的定义，那么什么时候会涉及到事务的传播：当一个方法开启了事务之后，该方法调用了其他方法，其他方法也需要事务管理，此时就涉及到了事务如何传播的问题
