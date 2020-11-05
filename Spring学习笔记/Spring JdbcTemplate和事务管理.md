@@ -262,8 +262,8 @@
             <bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">
                 <property name="driverClassName" value="com.mysql.cj.jdbc.Driver"></property>
                 <property name="url" value="jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&amp;characterEncoding=UTF-8&amp;serverTimezone=UTC"></property>
-                <property name="username" value="root"></property>
-                <property name="password" value="20010106"></property>
+                <property name="username" value="xxx"></property>
+                <property name="password" value="xxxx"></property>
             </bean>
 
             <!-- 创建JdbcTemplate对象 -->
@@ -345,6 +345,48 @@
             }
         }
 
+        ```
+    - 运行结果
+        ```
+        10:38:55.648 [main] DEBUG org.springframework.context.support.ClassPathXmlApplicationContext - Refreshing org.springframework.context.support.ClassPathXmlApplicationContext@6bc168e5
+        10:38:55.818 [main] DEBUG org.springframework.beans.factory.xml.XmlBeanDefinitionReader - Loaded 2 bean definitions from class path resource [JdbcBean.xml]
+        10:38:55.867 [main] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory - Creating shared instance of singleton bean 'dataSource'
+        10:38:55.942 [main] DEBUG org.springframework.jdbc.datasource.DriverManagerDataSource - Loaded JDBC driver: com.mysql.cj.jdbc.Driver
+        10:38:55.943 [main] DEBUG org.springframework.beans.factory.support.DefaultListableBeanFactory - Creating shared instance of singleton bean 'jdbcTemplate'
+        10:38:55.976 [main] DEBUG org.springframework.jdbc.core.JdbcTemplate - Executing prepared SQL update
+        10:38:55.977 [main] DEBUG org.springframework.jdbc.core.JdbcTemplate - Executing prepared SQL statement [insert into test(name ,sex) values (?, ?)]
+        10:38:55.980 [main] DEBUG org.springframework.jdbc.datasource.DataSourceUtils - Fetching JDBC Connection from DataSource
+        10:38:55.981 [main] DEBUG org.springframework.jdbc.datasource.DriverManagerDataSource - Creating new JDBC DriverManager Connection to [jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC]
+        10:38:56.278 [main] DEBUG org.springframework.jdbc.core.JdbcTemplate - Executing SQL query [select * from test]
+        10:38:56.279 [main] DEBUG org.springframework.jdbc.datasource.DataSourceUtils - Fetching JDBC Connection from DataSource
+        10:38:56.279 [main] DEBUG org.springframework.jdbc.datasource.DriverManagerDataSource - Creating new JDBC DriverManager Connection to [jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC]
+        10:38:56.301 [main] DEBUG org.springframework.jdbc.core.BeanPropertyRowMapper - Mapping column 'name' to property 'name' of type 'java.lang.String'
+        10:38:56.302 [main] DEBUG org.springframework.jdbc.core.BeanPropertyRowMapper - Mapping column 'sex' to property 'sex' of type 'java.lang.String'
+        Test{name='xx', sex='cc'}
+        Test{name='cc', sex='yy'}
+        Test{name='lily', sex='xx'}
+        10:38:56.304 [main] DEBUG org.springframework.jdbc.core.JdbcTemplate - Executing prepared SQL update
+        10:38:56.304 [main] DEBUG org.springframework.jdbc.core.JdbcTemplate - Executing prepared SQL statement [delete from test where name = ?]
+        10:38:56.304 [main] DEBUG org.springframework.jdbc.datasource.DataSourceUtils - Fetching JDBC Connection from DataSource
+        10:38:56.304 [main] DEBUG org.springframework.jdbc.datasource.DriverManagerDataSource - Creating new JDBC DriverManager Connection to [jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC]
+        10:38:56.309 [main] DEBUG org.springframework.jdbc.core.JdbcTemplate - Executing SQL query [select * from test]
+        10:38:56.309 [main] DEBUG org.springframework.jdbc.datasource.DataSourceUtils - Fetching JDBC Connection from DataSource
+        10:38:56.309 [main] DEBUG org.springframework.jdbc.datasource.DriverManagerDataSource - Creating new JDBC DriverManager Connection to [jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC]
+        10:38:56.312 [main] DEBUG org.springframework.jdbc.core.BeanPropertyRowMapper - Mapping column 'name' to property 'name' of type 'java.lang.String'
+        10:38:56.312 [main] DEBUG org.springframework.jdbc.core.BeanPropertyRowMapper - Mapping column 'sex' to property 'sex' of type 'java.lang.String'
+        Test{name='xx', sex='cc'}
+        Test{name='cc', sex='yy'}
+        10:38:56.313 [main] DEBUG org.springframework.jdbc.core.JdbcTemplate - Executing prepared SQL update
+        10:38:56.313 [main] DEBUG org.springframework.jdbc.core.JdbcTemplate - Executing prepared SQL statement [update test set sex = ? where name = ?]
+        10:38:56.313 [main] DEBUG org.springframework.jdbc.datasource.DataSourceUtils - Fetching JDBC Connection from DataSource
+        10:38:56.313 [main] DEBUG org.springframework.jdbc.datasource.DriverManagerDataSource - Creating new JDBC DriverManager Connection to [jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC]
+        10:38:56.316 [main] DEBUG org.springframework.jdbc.core.JdbcTemplate - Executing SQL query [select * from test]
+        10:38:56.317 [main] DEBUG org.springframework.jdbc.datasource.DataSourceUtils - Fetching JDBC Connection from DataSource
+        10:38:56.317 [main] DEBUG org.springframework.jdbc.datasource.DriverManagerDataSource - Creating new JDBC DriverManager Connection to [jdbc:mysql://127.0.0.1:3306/test?useUnicode=true&characterEncoding=UTF-8&serverTimezone=UTC]
+        10:38:56.319 [main] DEBUG org.springframework.jdbc.core.BeanPropertyRowMapper - Mapping column 'name' to property 'name' of type 'java.lang.String'
+        10:38:56.320 [main] DEBUG org.springframework.jdbc.core.BeanPropertyRowMapper - Mapping column 'sex' to property 'sex' of type 'java.lang.String'
+        Test{name='xx', sex='kk'}
+        Test{name='cc', sex='yy'}
         ```
 
 ## 事务管理
