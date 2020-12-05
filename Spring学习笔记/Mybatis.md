@@ -154,18 +154,19 @@
     - 注意事项：
         - Mapper.xml映射文件中namespace是面向接口的，所以需要一个接口来定义对应的SQL语句
         - 当从数据库中查询所有记录的时候，也就是上例中的getAll方法，resultType依旧是User而不是一个List
-- 在上例中，如果在selectOne出打一个断点，我们可以看到执行过程中所有调用的方法
-    - 首先调用了`DefaultSqlSession`类中的`selectOne()`方法，然后`selectOne()`方法进而调用了`selectList()`方法，并且如果List的大小大于1就会抛出异常
-    - 然后会调用到`Configuration`类中的`getMappedStatement()`方法，这个方法的参数就是我们的statement语句，处理完statement语句后，会对我们的查询关键字也就是name进行一些格式上的包装判断
-    - 然后就会调用到`CachingExecutor`类中的`query`方法，然后会调用一些方法获取绑定的sql命令，进而会通过调用另一个`query`方法进入到`BaseExecutor`类的`query`方法中，调用`queryFromDataBase()`方法，然后我们发现，真正去执行SQL操作的其实是`SimpleExecutor`类，`SimpleExecutor`类中的`doQuery`方法会使用`StatementHandler`，最后会调用到`prepareStatement()`方法也就是JDBC中对数据库进行交互的方法：
-        ```Java
-        private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
-            Connection connection = this.getConnection(statementLog);
-            Statement stmt = handler.prepare(connection, this.transaction.getTimeout());
-            handler.parameterize(stmt);
-            return stmt;
-        }
-        ```
+- Mybatis对JDBC的封装：
+    - 在上例中，如果在selectOne出打一个断点，我们可以看到执行过程中所有调用的方法：
+        - 首先调用了`DefaultSqlSession`类中的`selectOne()`方法，然后`selectOne()`方法进而调用了`selectList()`方法，并且如果List的大小大于1就会抛出异常
+        - 然后会调用到`Configuration`类中的`getMappedStatement()`方法，这个方法的参数就是我们的statement语句，处理完statement语句后，会对我们的查询关键字也就是name进行一些格式上的包装判断
+        - 然后就会调用到`CachingExecutor`类中的`query`方法，然后会调用一些方法获取绑定的sql命令，进而会通过调用另一个`query`方法进入到`BaseExecutor`类的`query`方法中，调用`queryFromDataBase()`方法，然后我们发现，真正去执行SQL操作的其实是`SimpleExecutor`类，`SimpleExecutor`类中的`doQuery`方法会使用`StatementHandler`，最后会调用到`prepareStatement()`方法也就是JDBC中对数据库进行交互的方法：
+            ```Java
+            private Statement prepareStatement(StatementHandler handler, Log statementLog) throws SQLException {
+                Connection connection = this.getConnection(statementLog);
+                Statement stmt = handler.prepare(connection, this.transaction.getTimeout());
+                handler.parameterize(stmt);
+                return stmt;
+            }
+            ```
 
 ## Springboot+MyBatis
 - Annotation的方式：
